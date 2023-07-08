@@ -167,9 +167,9 @@ class AuthTokenManager:
 class SignatureChallengeTokenAuth(HTTPBearer):
     def __init__(
         self,
-        auth_manager: AuthTokenManager,
-        challenge_endpoint: str,
-        token_endpoint: str,
+        auth_manager: AuthTokenManager = AuthTokenManager(),
+        challenge_endpoint: str = "/authorization/challenge",
+        token_endpoint: str = "/authorization/solve",
     ):
         self.auth_manager = auth_manager
         self.challenge_endpoint = challenge_endpoint
@@ -183,7 +183,7 @@ class SignatureChallengeTokenAuth(HTTPBearer):
             auto_error=False,
         )
 
-    def __call__(self, request: Request) -> Optional[WalletAuth]:
+    def __call__(self, request: Request) -> WalletAuth:
         authorization = request.headers.get("Authorization")
         scheme, credentials = get_authorization_scheme_param(authorization)
         if not (authorization and scheme and credentials):
@@ -212,10 +212,4 @@ class SignatureChallengeTokenAuth(HTTPBearer):
             raise e
 
 
-signature_challenge_token_auth = SignatureChallengeTokenAuth(
-    auth_manager=AuthTokenManager(),
-    challenge_endpoint="/authorization/challenge",
-    token_endpoint="/authorization/solve",
-)
-
-WalletAuthDep = Annotated[WalletAuth, Depends(signature_challenge_token_auth)]
+WalletAuthDep = Annotated[WalletAuth, Depends(SignatureChallengeTokenAuth())]

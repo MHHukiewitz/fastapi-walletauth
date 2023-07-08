@@ -33,13 +33,13 @@ You can then use `WalletAuthDep` to protect your endpoints:
 
 ```python
 from fastapi import FastAPI
-from fastapi_walletauth import WalletAuth, WalletAuthDep, authorization_routes
+from fastapi_walletauth import WalletAuthDep, authorization_routes
 
 app = FastAPI()
 app.include_router(authorization_routes)
 
 @app.get("/protected")
-def protected(wa: WalletAuth = WalletAuthDep()):
+def protected(wa: WalletAuthDep):
     return wa.address
 ```
 
