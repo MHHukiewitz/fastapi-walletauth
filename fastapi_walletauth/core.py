@@ -39,7 +39,7 @@ class WalletAuth(AuthInfo):
 
     def __init__(self, address: str, chain: SupportedChains, ttl: int = 120):
         valid_til = int(time.time()) + ttl  # 60 seconds
-        challenge = f'{{"chain":"{chain}","sender":"{address}","app":"{APP}","time":"{int(time.time())}"}}'
+        challenge = f'{{"chain":"{chain}","address":"{address}","app":"{APP}","time":"{time.time()}"}}'
         super().__init__(address=address, chain=chain, valid_til=valid_til, challenge=challenge)  # type: ignore
 
     @property

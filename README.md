@@ -57,25 +57,31 @@ def protected(wa: WalletAuth = WalletAuthDep()):
 
 ## Signing the challenge
 
-The challenge is a JSON object (similar to Aleph messages) containing the following fields:
+The challenge is a serialized JSON object containing the following fields:
 
 ```python
 message = {
     "chain": "ETH",
     "address": "0x...",
-    "type": "authorization_challenge",
-    "item_hash": "0x...",
+    "app": "myapp",
+    "time": 1688819493.8691394
 }
 ```
 
-- `chain`: The chain ID (e.g. `ETH` for Ethereum mainnet)
-- `address`: The address of the user
-- `type`: The type of message to be signed (`authorization_challenge`)
-- `item_hash`: A random hash
-
-Currently, it requires to be preprocessed into a *Verification Buffer* like this:
-```python
-"{chain}\n{sender}\n{type}\n{item_hash}".format(**message).encode("utf-8")
+**PLEASE NOTE**: The `app` field needs to be set to the name of your application. This is used to prevent replay attacks.
+```shell
+export FASTAPI_WALLETAUTH_APP=myapp
 ```
 
-before being signed with the user's private key. This signature is then sent to the `/authentication/solve` endpoint.
+The signature format depends on the wallet type and is specified in the `chain` field. This signature is then sent to the
+`/authentication/solve` endpoint to obtain a Bearer token.
+
+## Liability
+
+This software is provided "as is" and "with all faults." I make no representations or warranties of any kind concerning
+the safety, suitability, inaccuracies, typographical errors, or other harmful components of this
+software. There are inherent dangers in the use of any software, especially cryptographic implementations. You are solely
+responsible for determining whether this software is compatible with your machine and other software installed on your
+computer. You are also solely responsible for the choice of a wallet and the security of your private keys. You
+acknowledge and agree to waive any liability claim against me from any loss or damage of any kind arising out of or in
+connection with your use of this software.
