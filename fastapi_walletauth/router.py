@@ -1,7 +1,7 @@
-from aleph.sdk.exceptions import BadSignatureError
 from fastapi import APIRouter, HTTPException
 
 from .core import AuthTokenManager, NotAuthorizedError, SupportedChains, AuthInfo
+from .verification import BadSignatureError
 
 authorization = APIRouter(
     prefix="/authorization",

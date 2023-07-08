@@ -1,11 +1,8 @@
-import json
+import os
 import time
 from enum import Enum
 from typing import Dict, Optional, Annotated
 
-from aleph.sdk.chains.common import get_verification_buffer
-from aleph.sdk.chains.ethereum import verify_signature as verify_signature_eth
-from aleph.sdk.chains.sol import verify_signature as verify_signature_sol
 from fastapi import HTTPException
 from fastapi.params import Depends
 from fastapi.security import HTTPBearer
@@ -14,6 +11,11 @@ from nacl.bindings.randombytes import randombytes
 from pydantic import BaseModel, Field
 from starlette.requests import Request
 from starlette.status import HTTP_401_UNAUTHORIZED, HTTP_403_FORBIDDEN
+
+from fastapi_walletauth.verification import verify_signature_sol, verify_signature_eth
+
+
+APP = os.environ.get("FASTAPI_WALLETAUTH_APP", "unsafe_fastapi_walletauth")
 
 
 class SupportedChains(Enum):
@@ -36,8 +38,8 @@ class WalletAuth(AuthInfo):
         extra = "allow"
 
     def __init__(self, address: str, chain: SupportedChains, ttl: int = 120):
-        challenge = f'{{"chain":"{chain}","sender":"{address}","type":"authorization_challenge","item_hash":"{randombytes(64).hex()}"}}'
         valid_til = int(time.time()) + ttl  # 60 seconds
+        challenge = f'{{"chain":"{chain}","sender":"{address}","app":"{APP}","time":"{int(time.time())}"}}'
         super().__init__(address=address, chain=chain, valid_til=valid_til, challenge=challenge)  # type: ignore
 
     @property
@@ -53,17 +55,16 @@ class WalletAuth(AuthInfo):
         return int(time.time() > self.valid_til)
 
     def solve_challenge(self, signature: str):
-        message = get_verification_buffer(json.loads(self.challenge))
         if self.expired:
             raise TimeoutError("Challenge Expired")
 
         if self.chain == SupportedChains.Solana:
             verify_signature_sol(
-                signature=signature, public_key=self.address, message=message
+                signature=signature, public_key=self.address, message=self.challenge
             )
         elif self.chain == SupportedChains.Ethereum:
             verify_signature_eth(
-                signature=signature, public_key=self.address, message=message
+                signature=signature, public_key=self.address, message=self.challenge
             )
         else:
             raise NotImplementedError(
