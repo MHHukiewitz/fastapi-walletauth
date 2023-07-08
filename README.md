@@ -19,7 +19,7 @@ from fastapi import FastAPI
 
 app = FastAPI()
 
-import fastapi_walletauth.magic
+from src import fastapi_walletauth
 ```
 
 or if you prefer, you can add the endpoints manually:

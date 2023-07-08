@@ -1,9 +1,10 @@
 [tool.poetry]
 name = "fastapi-walletauth"
-version = "0.1.3"
+version = "0.1.4"
 description = "FastAPI extension for user authentication through signature challenges"
 authors = ["mhh <mike.hukiewitz@robotter.ai>"]
 readme = "README.md"
+packages = [{include = "src/fastapi_walletauth"}]
 keywords = ["FastAPI", "authentication", "signature", "wallet", "ethereum", "solana", "web3"]
 classifiers = [
     "Environment :: Web Environment",
