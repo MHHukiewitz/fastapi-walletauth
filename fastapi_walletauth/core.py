@@ -12,7 +12,7 @@ from pydantic import BaseModel, Field
 from starlette.requests import Request
 from starlette.status import HTTP_401_UNAUTHORIZED, HTTP_403_FORBIDDEN
 
-from src.fastapi_walletauth.verification import verify_signature_sol, verify_signature_eth
+from fastapi_walletauth.verification import verify_signature_sol, verify_signature_eth
 
 
 APP = os.environ.get("FASTAPI_WALLETAUTH_APP", "unsafe_fastapi_walletauth")

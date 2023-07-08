@@ -11,26 +11,15 @@ pip install fastapi-walletauth
 
 ## Usage
 
-Adding the authentication endpoints is as simple as importing the `fastapi_walletauth.magic` module **after** the
-FastAPI application has been created:
+Adding the authentication endpoints is as simple as importing the `authorization_routes` from `fastapi_walletauth`:
 
 ```python
 from fastapi import FastAPI
+from fastapi_walletauth import authorization_routes
 
 app = FastAPI()
 
-from src import fastapi_walletauth
-```
-
-or if you prefer, you can add the endpoints manually:
-
-```python
-from fastapi import FastAPI
-from fastapi_walletauth.router import authorization
-
-app = FastAPI()
-
-app.include_router(authorization)
+app.include_router(authorization_routes)
 ```
 
 This will add the following endpoints to your application:
@@ -44,11 +33,10 @@ You can then use `WalletAuthDep` to protect your endpoints:
 
 ```python
 from fastapi import FastAPI
-from fastapi_walletauth import WalletAuth, WalletAuthDep
+from fastapi_walletauth import WalletAuth, WalletAuthDep, authorization_routes
 
 app = FastAPI()
-
-import fastapi_walletauth.magic
+app.include_router(authorization_routes)
 
 @app.get("/protected")
 def protected(wa: WalletAuth = WalletAuthDep()):
