@@ -154,7 +154,7 @@ class AuthTokenManager:
                 cls.remove_auth(challenge)
 
     @classmethod
-    def refresh_token(cls, token: str, ttl: int = 60 * 60):
+    def refresh_token(cls, token: str, ttl: int = 24 * 60 * 60):
         auth = cls.__auths.get(token)
         if not auth:
             raise NotAuthorizedError("Not authorized")
