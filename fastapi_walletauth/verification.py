@@ -32,6 +32,7 @@ def verify_signature_sol(
     """
     if isinstance(signature, str):
         signature = base58.b58decode(signature)
+        # TODO: try decode from hex
     if isinstance(message, str):
         message = message.encode("utf-8")
     if isinstance(public_key, str):

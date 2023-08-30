@@ -3,11 +3,12 @@ from os import putenv
 
 import pytest
 from .core import AuthTokenManager, SupportedChains
-from eth_account import Account
+from nacl.signing import SigningKey
 from fastapi import HTTPException
 from starlette.testclient import TestClient
-from .router import authorization, create_challenge, refresh_token, solve_challenge
+from .router import authorization, create_challenge, solve_challenge
 from .verification import BadSignatureError
+import base58
 
 putenv("TEST_CHANNEL", "true")
 
@@ -44,29 +45,20 @@ def test_create_challenge(client):
 
 @pytest.mark.asyncio
 async def test_solve_challenge(client):
-    chain = SupportedChains.Ethereum.value
-    address = '0x5ce9454909639D2D17A3F753ce7d93fa0b9aB12E'
+    chain = SupportedChains.Solana.value
+    key = SigningKey.generate()
+    address = base58.b58encode(bytes(key.verify_key)).decode()
 
     challenge = await create_challenge(address, chain)
 
-    message = asdict(
-        Message(
-            chain,
-            address,
-            "POST",
-            challenge,
-        )
-    )
-
-    await Account.sign_message(message, '0x8676e9a8c86c8921e922e61e0bb6e9e9689aad4c99082620610b00140e5f21b8')
-    assert message["signature"]
+    signature = key.sign(challenge.challenge.encode()).signature.hex()
 
     response = client.post(
         "/authorization/solve",
         params={
             "address": address,
             "chain": chain,
-            "signature": message["signature"],
+            "signature": signature,
         },
     )
 
@@ -102,11 +94,11 @@ async def test_refresh_token(client):
             chain,
             address,
             "POST",
-            challenge,
+            challenge.challenge,
         )
     )
 
-    await Account.sign_message(message.challenge, '0x8676e9a8c86c8921e922e61e0bb6e9e9689aad4c99082620610b00140e5f21b8')
+    await Account.sign_message(message, '0x8676e9a8c86c8921e922e61e0bb6e9e9689aad4c99082620610b00140e5f21b8')
     assert message["signature"]
 
     solve_response = await solve_challenge(address, chain, message["signature"])
@@ -144,11 +136,11 @@ async def test_logout(client):
             chain,
             address,
             "POST",
-            challenge,
+            challenge.challenge,
         )
     )
 
-    await Account.sign_message(message.challenge, '0x8676e9a8c86c8921e922e61e0bb6e9e9689aad4c99082620610b00140e5f21b8')
+    await Account.sign_message(message, '0x8676e9a8c86c8921e922e61e0bb6e9e9689aad4c99082620610b00140e5f21b8')
     assert message["signature"]
 
     solve_response = await solve_challenge(address, chain, message["signature"])
