@@ -47,11 +47,11 @@ def test_create_challenge(client):
 async def test_solve_challenge(client):
     chain = SupportedChains.Solana.value
     key = SigningKey.generate()
-    address = base58.b58encode(bytes(key.verify_key)).decode()
+    address = base58.b58encode(bytes(key.verify_key)).decode("utf-8")
 
     challenge = await create_challenge(address, chain)
 
-    signature = key.sign(challenge.challenge.encode()).signature.hex()
+    signature = base58.b58encode(key.sign(challenge.challenge.encode()).signature).decode("utf-8")
 
     response = client.post(
         "/authorization/solve",
