@@ -31,8 +31,11 @@ def verify_signature_sol(
         BadSignatureError: If the signature is invalid.
     """
     if isinstance(signature, str):
-        signature = base58.b58decode(signature)
-        # TODO: try decode from hex
+        if signature.startswith("0x"):
+            signature = signature[2:]
+            signature = bytes.fromhex(signature)
+        else:
+            signature = base58.b58decode(signature)
     if isinstance(message, str):
         message = message.encode("utf-8")
     if isinstance(public_key, str):
