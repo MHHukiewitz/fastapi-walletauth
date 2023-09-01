@@ -4,11 +4,11 @@ from abc import abstractmethod
 from typing import Optional, TypeVar
 
 import jwt
-from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
-from pydantic import BaseModel, Field
+from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey, Ed25519PublicKey
+from pydantic import BaseModel
 
-from fastapi_walletauth.common import SupportedChains, NotAuthorizedError, settings
-from fastapi_walletauth.verification import verify_signature_sol, verify_signature_eth
+from fastapi_walletauth.common import NotAuthorizedError, SupportedChains, settings
+from fastapi_walletauth.verification import verify_signature_eth, verify_signature_sol
 
 
 class WalletCredentialsInfo(BaseModel):
@@ -23,25 +23,24 @@ class WalletCredentials(WalletCredentialsInfo):
     user's wallet. The token is created when successfully solving the challenge and used to authenticate the user with
     the server.
     """
+
     challenge: str
-    _token: Optional[str] = Field(..., alias="token")
+    internal_token: Optional[str]
 
-    class Config:
-        allow_population_by_field_name = True
-        extra = "allow"
-
-    def __init__(self, address: str, chain: SupportedChains, ttl: int = settings.CHALLENGE_TTL):
+    def __init__(
+        self, address: str, chain: SupportedChains, ttl: int = settings.CHALLENGE_TTL
+    ):
         valid_til = int(time.time()) + ttl
-        challenge = f'{{"chain":"{chain}","address":"{address}","app":"{settings.APP}","time":"{time.time()}"}}'
-        super().__init__(address=address, chain=chain, valid_til=valid_til, challenge=challenge)  # type: ignore
+        challenge = f'{{"chain":"{chain.value}","address":"{address}","app":"{settings.APP}","time":"{time.time()}"}}'
+        super().__init__(address=address, chain=chain, valid_til=valid_til, challenge=challenge, internal_token=None)
 
     @property
     def token(self) -> Optional[str]:
         if self.expired:
             raise TimeoutError("Token Expired")
-        if self._token is False:
+        if self.internal_token is False:
             return None
-        return self._token
+        return self.internal_token
 
     @property
     def expired(self):
@@ -73,7 +72,7 @@ class WalletCredentials(WalletCredentialsInfo):
 
 class SimpleWalletCredentials(WalletCredentials):
     def refresh_token(self, ttl: int = settings.TOKEN_TTL):
-        self._token = os.urandom(64).hex()
+        self.internal_token = os.urandom(64).hex()
         self.valid_til = int(time.time()) + ttl
 
 
@@ -81,28 +80,30 @@ class JWTWalletCredentials(WalletCredentials):
     def refresh_token(self, ttl: int = settings.TOKEN_TTL):
         self.valid_til = int(time.time()) + ttl
         payload = {
-            'iss': settings.APP,
-            'sub': self.address,
-            'exp': self.valid_til,
-            'iat': int(time.time()),
-            'nbf': int(time.time()),
-            'chain': self.chain.value,
+            "iss": settings.APP,
+            "sub": self.address,
+            "exp": self.valid_til,
+            "iat": int(time.time()),
+            "nbf": int(time.time()),
+            "chain": self.chain.value,
         }
         headers = {
-            'alg': 'EdDSA',
-            'crv': 'Ed25519',
-            'typ': 'JWT',
+            "alg": "EdDSA",
+            "crv": "Ed25519",
+            "typ": "JWT",
         }
         private_key = Ed25519PrivateKey.from_private_bytes(settings.PRIVATE_KEY)
-        self._token = jwt.encode(payload, private_key, algorithm='EdDSA', headers=headers)
+        self.internal_token = jwt.encode(
+            payload, private_key, algorithm="EdDSA", headers=headers
+        )
 
     @classmethod
     def from_token(cls, token: str):
         try:
-            private_key = Ed25519PrivateKey.from_private_bytes(settings.PRIVATE_KEY)
-            payload = jwt.decode(token, private_key, algorithms=['EdDSA'])
-            self = cls(payload['sub'], payload['chain'])
-            self.valid_til = payload['exp']
+            public_key = Ed25519PublicKey.from_public_bytes(settings.PUBLIC_KEY)
+            payload = jwt.decode(token, public_key, algorithms=["EdDSA"])
+            self = cls(address=payload["sub"], chain=payload["chain"])
+            self.valid_til = payload["exp"]
             self._token = token
 
             return self
@@ -112,4 +113,4 @@ class JWTWalletCredentials(WalletCredentials):
             raise NotAuthorizedError("Not authorized") from e
 
 
-GenericWalletCredentials = TypeVar('GenericWalletCredentials', bound=WalletCredentials)
+GenericWalletCredentials = TypeVar("GenericWalletCredentials", bound=WalletCredentials)

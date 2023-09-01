@@ -1,10 +1,12 @@
-from typing import Type
-
 from fastapi import APIRouter, HTTPException
 
-from .manager import ServerSideCredentialsManager, CredentialsManager, JWTCredentialsManager
-from .common import SupportedChains, NotAuthorizedError
+from .common import NotAuthorizedError, SupportedChains
 from .credentials import WalletCredentialsInfo
+from .manager import (
+    CredentialsManager,
+    JWTCredentialsManager,
+    ServerSideCredentialsManager,
+)
 from .verification import BadSignatureError
 
 
@@ -63,10 +65,14 @@ def create_authorization_router(credentials_manager: CredentialsManager) -> APIR
         except NotAuthorizedError:
             raise HTTPException(403, "Not authorized")
         return TokenResponse(
-            address=auth.address, chain=auth.chain, token=auth.token, valid_til=auth.valid_til
+            address=auth.address,
+            chain=auth.chain,
+            token=auth.token,
+            valid_til=auth.valid_til,
         )
 
     if isinstance(credentials_manager, ServerSideCredentialsManager):
+
         @routes.post("/logout")
         async def logout(token: str):
             credentials_manager.unregister_token(token)
@@ -75,5 +81,7 @@ def create_authorization_router(credentials_manager: CredentialsManager) -> APIR
     return routes
 
 
-server_side_authorization_router = create_authorization_router(ServerSideCredentialsManager())
+server_side_authorization_router = create_authorization_router(
+    ServerSideCredentialsManager()
+)
 jwt_authorization_router = create_authorization_router(JWTCredentialsManager())

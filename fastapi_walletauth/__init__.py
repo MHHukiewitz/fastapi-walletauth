@@ -1,3 +1,3 @@
+from .credentials import JWTWalletCredentials, SimpleWalletCredentials
 from .middleware import BearerWalletAuthDep, JWTWalletAuthDep
-from .credentials import SimpleWalletCredentials, JWTWalletCredentials
-from .router import server_side_authorization_router, jwt_authorization_router
+from .router import jwt_authorization_router, server_side_authorization_router

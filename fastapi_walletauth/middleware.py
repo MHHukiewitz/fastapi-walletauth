@@ -5,15 +5,22 @@ from fastapi.params import Depends
 from fastapi.security import HTTPBearer
 from fastapi.security.utils import get_authorization_scheme_param
 from starlette.requests import Request
-from starlette.status import HTTP_403_FORBIDDEN, HTTP_401_UNAUTHORIZED
+from starlette.status import HTTP_401_UNAUTHORIZED, HTTP_403_FORBIDDEN
 
-from fastapi_walletauth.credentials import SimpleWalletCredentials, JWTWalletCredentials, GenericWalletCredentials
 from fastapi_walletauth.common import NotAuthorizedError
-from fastapi_walletauth.manager import JWTCredentialsManager, CredentialsManager, ServerSideCredentialsManager
+from fastapi_walletauth.credentials import (
+    GenericWalletCredentials,
+    JWTWalletCredentials,
+    SimpleWalletCredentials,
+)
+from fastapi_walletauth.manager import (
+    CredentialsManager,
+    JWTCredentialsManager,
+    ServerSideCredentialsManager,
+)
 
 
 class BearerWalletAuth(HTTPBearer, Generic[GenericWalletCredentials]):
-
     def __init__(
         self,
         manager: CredentialsManager,
@@ -32,7 +39,7 @@ class BearerWalletAuth(HTTPBearer, Generic[GenericWalletCredentials]):
             auto_error=False,
         )
 
-    def __call__(self, request: Request) -> GenericWalletCredentials:
+    async def __call__(self, request: Request) -> GenericWalletCredentials:
         authorization = request.headers.get("Authorization")
         scheme, credentials = get_authorization_scheme_param(authorization)
         if not (authorization and scheme and credentials):
@@ -62,6 +69,10 @@ class BearerWalletAuth(HTTPBearer, Generic[GenericWalletCredentials]):
 
 
 jwt_credentials_manager = JWTCredentialsManager()
-JWTWalletAuthDep = Annotated[JWTWalletCredentials, Depends(BearerWalletAuth(jwt_credentials_manager))]
+JWTWalletAuthDep = Annotated[
+    JWTWalletCredentials, Depends(BearerWalletAuth(jwt_credentials_manager))
+]
 server_side_credentials_manager = ServerSideCredentialsManager()
-BearerWalletAuthDep = Annotated[SimpleWalletCredentials, Depends(BearerWalletAuth(server_side_credentials_manager))]
+BearerWalletAuthDep = Annotated[
+    SimpleWalletCredentials, Depends(BearerWalletAuth(server_side_credentials_manager))
+]

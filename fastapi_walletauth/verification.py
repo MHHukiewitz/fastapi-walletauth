@@ -3,9 +3,9 @@ from typing import Union
 import base58
 from eth_account import Account
 from eth_account.messages import encode_defunct
-from nacl.signing import VerifyKey
-from nacl.exceptions import BadSignatureError as NaclBadSignatureError
 from eth_keys.exceptions import BadSignature as EthBadSignatureError
+from nacl.exceptions import BadSignatureError as NaclBadSignatureError
+from nacl.signing import VerifyKey
 
 
 class BadSignatureError(Exception):

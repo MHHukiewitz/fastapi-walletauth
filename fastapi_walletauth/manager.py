@@ -2,8 +2,12 @@ import time
 from abc import abstractmethod
 from typing import Dict, Generic, Type
 
-from fastapi_walletauth.credentials import SimpleWalletCredentials, JWTWalletCredentials, GenericWalletCredentials
-from fastapi_walletauth.common import SupportedChains, NotAuthorizedError, settings
+from fastapi_walletauth.common import NotAuthorizedError, SupportedChains, settings
+from fastapi_walletauth.credentials import (
+    GenericWalletCredentials,
+    JWTWalletCredentials,
+    SimpleWalletCredentials,
+)
 
 
 class CredentialsManager(Generic[GenericWalletCredentials]):
@@ -28,7 +32,9 @@ class CredentialsManager(Generic[GenericWalletCredentials]):
             raise e
 
     @classmethod
-    def get_challenge(cls, address: str, chain: SupportedChains) -> GenericWalletCredentials:
+    def get_challenge(
+        cls, address: str, chain: SupportedChains
+    ) -> GenericWalletCredentials:
         auth = cls.__challenges.get(address + "-" + str(chain))
         if auth is None or int(time.time()) > auth.valid_til:
             auth = cls.credentials_type(address=address, chain=chain)
@@ -53,7 +59,9 @@ class CredentialsManager(Generic[GenericWalletCredentials]):
         raise NotImplementedError
 
     @classmethod
-    def refresh_token(cls, token: str, ttl: int = settings.TOKEN_TTL) -> GenericWalletCredentials:
+    def refresh_token(
+        cls, token: str, ttl: int = settings.TOKEN_TTL
+    ) -> GenericWalletCredentials:
         raise NotImplementedError
 
 
@@ -62,6 +70,7 @@ class ServerSideCredentialsManager(CredentialsManager[SimpleWalletCredentials]):
     This class is used to manage authentication tokens and signature challenges on the server side.
     A self-updating dictionary keeping track of all authentication tokens and signature challenges.
     """
+
     __auths: Dict[str, SimpleWalletCredentials] = {}
     """Maps all authentication tokens to their respective `WalletAuth` objects."""
 
@@ -82,13 +91,15 @@ class ServerSideCredentialsManager(CredentialsManager[SimpleWalletCredentials]):
         cls, address: str, chain: SupportedChains, signature: str
     ) -> SimpleWalletCredentials:
         auth = super().solve_challenge(address, chain, signature)
+        assert auth.token
         cls.__auths[auth.token] = auth
         return auth
 
     @classmethod
     def unregister_auth(cls, auth: SimpleWalletCredentials) -> None:
         cls.remove_challenge(auth.address, auth.chain)
-        cls.__auths.pop(auth.token)
+        if auth.token:
+            cls.__auths.pop(auth.token)
 
     @classmethod
     def unregister_token(cls, token: str) -> None:
@@ -104,10 +115,13 @@ class ServerSideCredentialsManager(CredentialsManager[SimpleWalletCredentials]):
                 cls.unregister_auth(challenge)
 
     @classmethod
-    def refresh_token(cls, token: str, ttl: int = settings.TOKEN_TTL) -> SimpleWalletCredentials:
+    def refresh_token(
+        cls, token: str, ttl: int = settings.TOKEN_TTL
+    ) -> SimpleWalletCredentials:
         auth = cls.get_auth_by_token(token)
         cls.unregister_auth(auth)
         auth.refresh_token(ttl)
+        assert auth.token
         cls.__auths[auth.token] = auth
         return auth
 
@@ -117,6 +131,7 @@ class JWTCredentialsManager(CredentialsManager[JWTWalletCredentials]):
     This manager is simpler than the `ServerSideCredentialsManager` because it does not need to keep track of
     authentication tokens thanks to JWT validation. It only needs to keep track of the challenges.
     """
+
     credentials_type = JWTWalletCredentials
 
     @classmethod

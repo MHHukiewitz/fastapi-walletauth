@@ -1,23 +1,23 @@
-from dataclasses import dataclass
-from os import putenv
-
+import base58
 import pytest
 from nacl.signing import SigningKey
-from fastapi import HTTPException
 from starlette.testclient import TestClient
 
 from fastapi_walletauth.common import SupportedChains
-from fastapi_walletauth.manager import ServerSideCredentialsManager
-from fastapi_walletauth.router import server_side_authorization_router, jwt_authorization_router
-from fastapi_walletauth.verification import BadSignatureError
-import base58
+from fastapi_walletauth.router import (
+    jwt_authorization_router,
+    server_side_authorization_router,
+)
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("client", [
-    TestClient(server_side_authorization_router),
-    TestClient(jwt_authorization_router)
-])
+@pytest.mark.parametrize(
+    "client",
+    [
+        TestClient(server_side_authorization_router),
+        TestClient(jwt_authorization_router),
+    ],
+)
 async def test_router_integration(client):
     chain = SupportedChains.Solana.value
     key = SigningKey.generate()
@@ -34,7 +34,9 @@ async def test_router_integration(client):
     assert "challenge" in data
     assert "valid_til" in data
 
-    signature = base58.b58encode(key.sign(data["challenge"].encode()).signature).decode("utf-8")
+    signature = base58.b58encode(key.sign(data["challenge"].encode()).signature).decode(
+        "utf-8"
+    )
 
     response = client.post(
         "/authorization/solve",
