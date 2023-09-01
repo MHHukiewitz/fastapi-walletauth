@@ -84,24 +84,15 @@ def test_solve_challenge_with_forged_signature(client):
 
 @pytest.mark.asyncio
 async def test_refresh_token(client):
-    chain = SupportedChains.Ethereum.value
-    address = '0x5ce9454909639D2D17A3F753ce7d93fa0b9aB12E'
+    chain = SupportedChains.Solana.value
+    key = SigningKey.generate()
+    address = base58.b58encode(bytes(key.verify_key)).decode("utf-8")
 
     challenge = await create_challenge(address, chain)
 
-    message = asdict(
-        Message(
-            chain,
-            address,
-            "POST",
-            challenge.challenge,
-        )
-    )
+    signature = base58.b58encode(key.sign(challenge.challenge.encode()).signature).decode("utf-8")
 
-    await Account.sign_message(message, '0x8676e9a8c86c8921e922e61e0bb6e9e9689aad4c99082620610b00140e5f21b8')
-    assert message["signature"]
-
-    solve_response = await solve_challenge(address, chain, message["signature"])
+    solve_response = await solve_challenge(address, chain, signature)
 
     response = client.post(
         "/authorization/refresh",
@@ -126,24 +117,15 @@ async def test_refresh_token(client):
 
 @pytest.mark.asyncio
 async def test_logout(client):
-    chain = SupportedChains.Ethereum.value
-    address = '0x5ce9454909639D2D17A3F753ce7d93fa0b9aB12E'
+    chain = SupportedChains.Solana.value
+    key = SigningKey.generate()
+    address = base58.b58encode(bytes(key.verify_key)).decode("utf-8")
 
     challenge = await create_challenge(address, chain)
 
-    message = asdict(
-        Message(
-            chain,
-            address,
-            "POST",
-            challenge.challenge,
-        )
-    )
+    signature = base58.b58encode(key.sign(challenge.challenge.encode()).signature).decode("utf-8")
 
-    await Account.sign_message(message, '0x8676e9a8c86c8921e922e61e0bb6e9e9689aad4c99082620610b00140e5f21b8')
-    assert message["signature"]
-
-    solve_response = await solve_challenge(address, chain, message["signature"])
+    solve_response = await solve_challenge(address, chain, signature)
 
     response = client.post(
         "/authorization/logout",
