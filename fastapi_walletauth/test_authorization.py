@@ -51,7 +51,7 @@ async def test_solve_challenge(client):
 
     challenge = await create_challenge(address, chain)
 
-    signature = key.sign(challenge.challenge.encode()).signature.hex()
+    signature = "0x" + key.sign(challenge.challenge.encode()).signature.hex()
 
     response = client.post(
         "/authorization/solve",

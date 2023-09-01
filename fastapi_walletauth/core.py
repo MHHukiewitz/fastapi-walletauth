@@ -113,7 +113,7 @@ class AuthTokenManager:
     @classmethod
     def get_challenge(cls, address: str, chain: SupportedChains) -> WalletAuth:
         auth = cls.__challenges.get(address + "-" + str(chain))
-        if auth is None or int(time.time()) > auth.valid_til:
+        if auth is None or auth.expired:
             auth = WalletAuth(address=address, chain=chain)
             cls.__challenges[address + "-" + str(chain)] = auth
         return auth
