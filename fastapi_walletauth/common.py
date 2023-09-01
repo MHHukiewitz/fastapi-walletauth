@@ -1,7 +1,7 @@
 from enum import Enum
 
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
-from pydantic_settings import BaseSettings
+from pydantic import BaseSettings
 
 
 class SupportedChains(Enum):
