@@ -1,4 +1,4 @@
-from typing import Annotated
+from typing import Annotated, Generic
 
 from fastapi import HTTPException
 from fastapi.params import Depends
@@ -7,14 +7,12 @@ from fastapi.security.utils import get_authorization_scheme_param
 from starlette.requests import Request
 from starlette.status import HTTP_403_FORBIDDEN, HTTP_401_UNAUTHORIZED
 
-from fastapi_walletauth import SimpleWalletCredentials
-from fastapi_walletauth.credentials import JWTWalletCredentials, GenericWalletCredentials
+from fastapi_walletauth.credentials import SimpleWalletCredentials, JWTWalletCredentials, GenericWalletCredentials
 from fastapi_walletauth.common import NotAuthorizedError
 from fastapi_walletauth.manager import JWTCredentialsManager, CredentialsManager, ServerSideCredentialsManager
 
 
-class BearerWalletAuth(HTTPBearer, GenericWalletCredentials):
-    credentials_type: GenericWalletCredentials
+class BearerWalletAuth(HTTPBearer, Generic[GenericWalletCredentials]):
 
     def __init__(
         self,
@@ -22,7 +20,6 @@ class BearerWalletAuth(HTTPBearer, GenericWalletCredentials):
         challenge_endpoint: str = "/authorization/challenge",
         token_endpoint: str = "/authorization/solve",
     ):
-        self.credentials_type = manager.credentials_type
         self.manager = manager
         self.challenge_endpoint = challenge_endpoint
         self.token_endpoint = token_endpoint
@@ -65,5 +62,6 @@ class BearerWalletAuth(HTTPBearer, GenericWalletCredentials):
 
 
 jwt_credentials_manager = JWTCredentialsManager()
-JWTWalletAuthDep = Annotated[JWTWalletCredentials, Depends(BearerWalletAuth(JWTCredentialsManager()))]
-BearerWalletAuthDep = Annotated[SimpleWalletCredentials, Depends(BearerWalletAuth(ServerSideCredentialsManager()))]
+JWTWalletAuthDep = Annotated[JWTWalletCredentials, Depends(BearerWalletAuth(jwt_credentials_manager))]
+server_side_credentials_manager = ServerSideCredentialsManager()
+BearerWalletAuthDep = Annotated[SimpleWalletCredentials, Depends(BearerWalletAuth(server_side_credentials_manager))]

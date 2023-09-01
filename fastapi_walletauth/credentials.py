@@ -4,6 +4,7 @@ from abc import abstractmethod
 from typing import Optional, TypeVar
 
 import jwt
+from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from pydantic import BaseModel, Field
 
 from fastapi_walletauth.common import SupportedChains, NotAuthorizedError, settings
@@ -85,19 +86,21 @@ class JWTWalletCredentials(WalletCredentials):
             'exp': self.valid_til,
             'iat': int(time.time()),
             'nbf': int(time.time()),
-            'chain': self.chain,
+            'chain': self.chain.value,
         }
         headers = {
             'alg': 'EdDSA',
             'crv': 'Ed25519',
             'typ': 'JWT',
         }
-        self._token = jwt.encode(payload, settings.PRIVATE_KEY, algorithm='EdDSA', headers=headers)
+        private_key = Ed25519PrivateKey.from_private_bytes(settings.PRIVATE_KEY)
+        self._token = jwt.encode(payload, private_key, algorithm='EdDSA', headers=headers)
 
     @classmethod
     def from_token(cls, token: str):
         try:
-            payload = jwt.decode(token, settings.PRIVATE_KEY, algorithms=['EdDSA'])
+            private_key = Ed25519PrivateKey.from_private_bytes(settings.PRIVATE_KEY)
+            payload = jwt.decode(token, private_key, algorithms=['EdDSA'])
             self = cls(payload['sub'], payload['chain'])
             self.valid_til = payload['exp']
             self._token = token

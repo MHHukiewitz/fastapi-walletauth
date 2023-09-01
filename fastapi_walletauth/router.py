@@ -16,7 +16,7 @@ class TokenResponse(WalletCredentialsInfo):
     token: str
 
 
-def create_authorization_routes(credentials_manager: Type[CredentialsManager]) -> APIRouter:
+def create_authorization_router(credentials_manager: CredentialsManager) -> APIRouter:
     routes = APIRouter(
         prefix="/authorization",
         tags=["authorization"],
@@ -27,7 +27,7 @@ def create_authorization_routes(credentials_manager: Type[CredentialsManager]) -
     async def create_challenge(
         address: str, chain: SupportedChains
     ) -> ChallengeResponse:
-        challenge = credentials_manager.get_auth_by_wallet(address=address, chain=chain)
+        challenge = credentials_manager.get_challenge(address=address, chain=chain)
         return ChallengeResponse(
             address=challenge.address,
             chain=challenge.chain,
@@ -66,7 +66,7 @@ def create_authorization_routes(credentials_manager: Type[CredentialsManager]) -
             address=auth.address, chain=auth.chain, token=auth.token, valid_til=auth.valid_til
         )
 
-    if issubclass(credentials_manager, ServerSideCredentialsManager):
+    if isinstance(credentials_manager, ServerSideCredentialsManager):
         @routes.post("/logout")
         async def logout(token: str):
             credentials_manager.unregister_token(token)
@@ -75,5 +75,5 @@ def create_authorization_routes(credentials_manager: Type[CredentialsManager]) -
     return routes
 
 
-server_side_authorization_routes = create_authorization_routes(ServerSideCredentialsManager)
-jwt_authorization_routes = create_authorization_routes(JWTCredentialsManager)
+server_side_authorization_router = create_authorization_router(ServerSideCredentialsManager())
+jwt_authorization_router = create_authorization_router(JWTCredentialsManager())

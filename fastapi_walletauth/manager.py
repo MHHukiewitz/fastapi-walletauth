@@ -1,12 +1,12 @@
 import time
 from abc import abstractmethod
-from typing import Dict
+from typing import Dict, Generic, Type
 
 from fastapi_walletauth.credentials import SimpleWalletCredentials, JWTWalletCredentials, GenericWalletCredentials
 from fastapi_walletauth.common import SupportedChains, NotAuthorizedError, settings
 
 
-class CredentialsManager(GenericWalletCredentials):
+class CredentialsManager(Generic[GenericWalletCredentials]):
     """
     A self-updating dictionary keeping track of all authentication tokens and signature challenges.
     """
@@ -14,7 +14,7 @@ class CredentialsManager(GenericWalletCredentials):
     __challenges: Dict[str, GenericWalletCredentials] = {}
     """Keeps track of all solved and unsolved challenges. Keys have format `<address>-<chain>`."""
 
-    credentials_type: GenericWalletCredentials
+    credentials_type: Type[GenericWalletCredentials]
 
     @classmethod
     def get_token(cls, address: str, chain: SupportedChains) -> str:
@@ -28,10 +28,10 @@ class CredentialsManager(GenericWalletCredentials):
             raise e
 
     @classmethod
-    def get_auth_by_wallet(cls, address: str, chain: SupportedChains) -> GenericWalletCredentials:
+    def get_challenge(cls, address: str, chain: SupportedChains) -> GenericWalletCredentials:
         auth = cls.__challenges.get(address + "-" + str(chain))
         if auth is None or int(time.time()) > auth.valid_til:
-            auth = type(GenericWalletCredentials)(address=address, chain=chain)
+            auth = cls.credentials_type(address=address, chain=chain)
             cls.__challenges[address + "-" + str(chain)] = auth
         return auth
 
@@ -43,7 +43,7 @@ class CredentialsManager(GenericWalletCredentials):
     def solve_challenge(
         cls, address: str, chain: SupportedChains, signature: str
     ) -> GenericWalletCredentials:
-        auth = cls.get_auth_by_wallet(address, chain)
+        auth = cls.get_challenge(address, chain)
         auth.solve_challenge(signature)
         return auth
 
@@ -64,6 +64,8 @@ class ServerSideCredentialsManager(CredentialsManager[SimpleWalletCredentials]):
     """
     __auths: Dict[str, SimpleWalletCredentials] = {}
     """Maps all authentication tokens to their respective `WalletAuth` objects."""
+
+    credentials_type = SimpleWalletCredentials
 
     @classmethod
     def get_auth_by_token(cls, token: str) -> SimpleWalletCredentials:
@@ -115,6 +117,8 @@ class JWTCredentialsManager(CredentialsManager[JWTWalletCredentials]):
     This manager is simpler than the `ServerSideCredentialsManager` because it does not need to keep track of
     authentication tokens thanks to JWT validation. It only needs to keep track of the challenges.
     """
+    credentials_type = JWTWalletCredentials
+
     @classmethod
     def get_auth_by_token(cls, token: str) -> JWTWalletCredentials:
         return JWTWalletCredentials.from_token(token)
