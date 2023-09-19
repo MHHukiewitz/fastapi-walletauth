@@ -31,24 +31,20 @@ class AuthInfo(BaseModel):
 
 class WalletAuth(AuthInfo):
     challenge: str
-    _token: Optional[str] = Field(..., alias="token")
-
-    class Config:
-        allow_population_by_field_name = True
-        extra = "allow"
+    token_internal: Optional[str]
 
     def __init__(self, address: str, chain: SupportedChains, ttl: int = 120):
         valid_til = int(time.time()) + ttl  # 60 seconds
         challenge = f'{{"chain":"{chain}","address":"{address}","app":"{APP}","time":"{time.time()}"}}'
-        super().__init__(address=address, chain=chain, valid_til=valid_til, challenge=challenge)  # type: ignore
+        super().__init__(address=address, chain=chain, valid_til=valid_til, challenge=challenge, token_internal=None)  # type: ignore
 
     @property
     def token(self) -> Optional[str]:
         if self.expired:
             raise TimeoutError("Token Expired")
-        if self._token is False:
+        if self.token_internal is False:
             return None
-        return self._token
+        return self.token_internal
 
     @property
     def expired(self):
@@ -74,7 +70,7 @@ class WalletAuth(AuthInfo):
         self.refresh_token()
 
     def refresh_token(self, ttl: int = 60 * 60):
-        self._token = randombytes(64).hex()
+        self.token_internal = randombytes(64).hex()
         self.valid_til = int(time.time()) + ttl  # 1 hour
 
 
@@ -117,7 +113,7 @@ class AuthTokenManager:
     @classmethod
     def get_challenge(cls, address: str, chain: SupportedChains) -> WalletAuth:
         auth = cls.__challenges.get(address + "-" + str(chain))
-        if auth is None or int(time.time()) > auth.valid_til:
+        if auth is None or auth.expired:
             auth = WalletAuth(address=address, chain=chain)
             cls.__challenges[address + "-" + str(chain)] = auth
         return auth
