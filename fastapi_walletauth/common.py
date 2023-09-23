@@ -20,8 +20,8 @@ class NotAuthorizedError(Exception):
 
 class Settings(BaseSettings):
     APP: str = "fastapi_walletauth"
-    PRIVATE_KEY: bytes = Ed25519PrivateKey.generate().private_bytes_raw()
-    PUBLIC_KEY: bytes = Ed25519PrivateKey.from_private_bytes(PRIVATE_KEY).public_key().public_bytes_raw()
+    PRIVATE_KEY: str = Ed25519PrivateKey.generate().private_bytes_raw().hex()
+    PUBLIC_KEY: str = None
     AUTH_TYPE: str = AuthType.JWT.value
     TOKEN_TTL: int = 24 * 60 * 60  # 24 hours
     CHALLENGE_TTL: int = 10 * 60  # 10 minutes
@@ -33,3 +33,5 @@ class Settings(BaseSettings):
 
 
 settings = Settings()
+if settings.PUBLIC_KEY is None:
+    settings.PUBLIC_KEY = Ed25519PrivateKey.from_private_bytes(bytes.fromhex(settings.PRIVATE_KEY)).public_key().public_bytes_raw().hex()
