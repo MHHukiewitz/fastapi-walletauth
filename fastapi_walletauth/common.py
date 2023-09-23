@@ -1,7 +1,7 @@
 from enum import Enum
 
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
-from pydantic import BaseSettings
+from pydantic_settings import BaseSettings
 
 
 class SupportedChains(Enum):
@@ -26,10 +26,11 @@ class Settings(BaseSettings):
     TOKEN_TTL: int = 24 * 60 * 60  # 24 hours
     CHALLENGE_TTL: int = 10 * 60  # 10 minutes
 
-    class Config:
-        env_prefix = "FASTAPI_WALLETAUTH_"
-        case_sensitive = False
-        env_file = ".env"
+    model_config = {
+        "env_prefix": "FASTAPI_WALLETAUTH_",
+        "case_sensitive": False,
+        "env_file": ".env",
+    }
 
 
 settings = Settings()
