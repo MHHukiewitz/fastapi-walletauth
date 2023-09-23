@@ -92,7 +92,7 @@ class JWTWalletCredentials(WalletCredentials):
             "crv": "Ed25519",
             "typ": "JWT",
         }
-        private_key = Ed25519PrivateKey.from_private_bytes(settings.PRIVATE_KEY)
+        private_key = Ed25519PrivateKey.from_private_bytes(bytes.fromhex(settings.PRIVATE_KEY))
         self.internal_token = jwt.encode(
             payload, private_key, algorithm="EdDSA", headers=headers
         )
@@ -100,7 +100,7 @@ class JWTWalletCredentials(WalletCredentials):
     @classmethod
     def from_token(cls, token: str):
         try:
-            public_key = Ed25519PublicKey.from_public_bytes(settings.PUBLIC_KEY)
+            public_key = Ed25519PublicKey.from_public_bytes(bytes.fromhex(settings.PUBLIC_KEY))
             payload = jwt.decode(token, public_key, algorithms=["EdDSA"])
             self = cls(address=payload["sub"], chain=payload["chain"])
             self.valid_til = payload["exp"]
