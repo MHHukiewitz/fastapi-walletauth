@@ -1,2 +1,3 @@
-from .core import WalletAuth, WalletAuthDep
-from .router import authorization as authorization_routes
+from .credentials import JWTWalletCredentials, SimpleWalletCredentials
+from .middleware import BearerWalletAuthDep, JWTWalletAuthDep
+from .router import jwt_authorization_router, server_side_authorization_router
