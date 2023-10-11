@@ -1,21 +1,63 @@
 import base58
 import pytest
+from fastapi import FastAPI, Depends
+from fastapi.routing import APIRouter
 from nacl.signing import SigningKey
 from starlette.testclient import TestClient
 
 from fastapi_walletauth.common import SupportedChains
+from fastapi_walletauth.middleware import server_side_credentials_manager, BearerWalletAuth, ServerSideWalletAuthDep, \
+    jwt_credentials_manager, JWTWalletAuthDep
 from fastapi_walletauth.router import (
     jwt_authorization_router,
     server_side_authorization_router,
 )
+
+server_side_app = FastAPI()
+server_side_app.include_router(server_side_authorization_router)
+authorized_server_side_router = APIRouter(
+    dependencies=[Depends(BearerWalletAuth(server_side_credentials_manager))]
+)
+
+
+@authorized_server_side_router.get("/authorized")
+def authorized(
+    user: ServerSideWalletAuthDep
+):
+    return {
+        "address": user.address,
+        "chain": user.chain,
+    }
+
+
+server_side_app.include_router(authorized_server_side_router)
+
+jwt_app = FastAPI()
+jwt_app.include_router(jwt_authorization_router)
+authorized_jwt_router = APIRouter(
+    dependencies=[Depends(BearerWalletAuth(jwt_credentials_manager))]
+)
+
+
+@authorized_jwt_router.get("/authorized")
+def authorized(
+    user: JWTWalletAuthDep
+):
+    return {
+        "address": user.address,
+        "chain": user.chain,
+    }
+
+
+jwt_app.include_router(authorized_jwt_router)
 
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize(
     "client",
     [
-        TestClient(server_side_authorization_router),
-        TestClient(jwt_authorization_router),
+        TestClient(server_side_app),
+        TestClient(jwt_app),
     ],
 )
 async def test_router_integration(client):
@@ -54,5 +96,13 @@ async def test_router_integration(client):
     assert "token" in data
     assert "valid_til" in data
 
+    token = data["token"]
 
-# TODO: test refresh, logout
+    response = client.get(
+        "/authorized",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert data["address"] == address
+    assert data["chain"] == chain
