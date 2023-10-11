@@ -52,6 +52,11 @@ def parse_key(key: str) -> str:
 
 settings.PRIVATE_KEY = parse_key(settings.PRIVATE_KEY)
 if settings.PUBLIC_KEY is None:
-    settings.PUBLIC_KEY = Ed25519PrivateKey.from_private_bytes(bytes.fromhex(settings.PRIVATE_KEY)).public_key().public_bytes_raw().hex()
+    settings.PUBLIC_KEY = (
+        Ed25519PrivateKey.from_private_bytes(bytes.fromhex(settings.PRIVATE_KEY))
+        .public_key()
+        .public_bytes_raw()
+        .hex()
+    )
 else:
     settings.PUBLIC_KEY = parse_key(settings.PUBLIC_KEY)

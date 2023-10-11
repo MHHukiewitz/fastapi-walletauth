@@ -1,3 +1,3 @@
 from .credentials import JWTWalletCredentials, ServerSideWalletCredentials
-from .middleware import ServerSideWalletAuthDep, JWTWalletAuthDep
+from .middleware import JWTWalletAuthDep, ServerSideWalletAuthDep
 from .router import jwt_authorization_router, server_side_authorization_router

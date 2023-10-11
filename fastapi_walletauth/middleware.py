@@ -74,5 +74,6 @@ JWTWalletAuthDep = Annotated[
 ]
 server_side_credentials_manager = ServerSideCredentialsManager()
 ServerSideWalletAuthDep = Annotated[
-    ServerSideWalletCredentials, Depends(BearerWalletAuth(server_side_credentials_manager))
+    ServerSideWalletCredentials,
+    Depends(BearerWalletAuth(server_side_credentials_manager)),
 ]

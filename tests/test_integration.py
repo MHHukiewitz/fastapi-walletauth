@@ -1,13 +1,18 @@
 import base58
 import pytest
-from fastapi import FastAPI, Depends
+from fastapi import Depends, FastAPI
 from fastapi.routing import APIRouter
 from nacl.signing import SigningKey
 from starlette.testclient import TestClient
 
 from fastapi_walletauth.common import SupportedChains
-from fastapi_walletauth.middleware import server_side_credentials_manager, BearerWalletAuth, ServerSideWalletAuthDep, \
-    jwt_credentials_manager, JWTWalletAuthDep
+from fastapi_walletauth.middleware import (
+    BearerWalletAuth,
+    JWTWalletAuthDep,
+    ServerSideWalletAuthDep,
+    jwt_credentials_manager,
+    server_side_credentials_manager,
+)
 from fastapi_walletauth.router import (
     jwt_authorization_router,
     server_side_authorization_router,
@@ -21,9 +26,7 @@ authorized_server_side_router = APIRouter(
 
 
 @authorized_server_side_router.get("/authorized")
-def authorized(
-    user: ServerSideWalletAuthDep
-):
+def authorized(user: ServerSideWalletAuthDep):
     return {
         "address": user.address,
         "chain": user.chain,
@@ -40,9 +43,7 @@ authorized_jwt_router = APIRouter(
 
 
 @authorized_jwt_router.get("/authorized")
-def authorized(
-    user: JWTWalletAuthDep
-):
+def authorized(user: JWTWalletAuthDep):
     return {
         "address": user.address,
         "chain": user.chain,
