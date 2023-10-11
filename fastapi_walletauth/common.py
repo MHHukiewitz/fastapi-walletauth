@@ -41,7 +41,7 @@ def parse_key(key: str) -> str:
     if key.startswith("0x"):
         return key[2:]
     elif key.startswith("[") and key.endswith("]"):
-        raw = bytes([int(x) for x in key[1:-1].split(",")])
+        raw = bytes([int(x) for x in key[1:-1].split(",")])[:32]
         return raw.hex()
     else:
         try:
