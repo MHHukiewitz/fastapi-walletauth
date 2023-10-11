@@ -11,7 +11,7 @@ from fastapi_walletauth.common import NotAuthorizedError
 from fastapi_walletauth.credentials import (
     GenericWalletCredentials,
     JWTWalletCredentials,
-    SimpleWalletCredentials,
+    ServerSideWalletCredentials,
 )
 from fastapi_walletauth.manager import (
     CredentialsManager,
@@ -73,6 +73,6 @@ JWTWalletAuthDep = Annotated[
     JWTWalletCredentials, Depends(BearerWalletAuth(jwt_credentials_manager))
 ]
 server_side_credentials_manager = ServerSideCredentialsManager()
-BearerWalletAuthDep = Annotated[
-    SimpleWalletCredentials, Depends(BearerWalletAuth(server_side_credentials_manager))
+ServerSideWalletAuthDep = Annotated[
+    ServerSideWalletCredentials, Depends(BearerWalletAuth(server_side_credentials_manager))
 ]

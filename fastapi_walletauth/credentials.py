@@ -70,7 +70,7 @@ class WalletCredentials(WalletCredentialsInfo):
         raise NotImplementedError
 
 
-class SimpleWalletCredentials(WalletCredentials):
+class ServerSideWalletCredentials(WalletCredentials):
     def refresh_token(self, ttl: int = settings.TOKEN_TTL):
         self.internal_token = os.urandom(64).hex()
         self.valid_til = int(time.time()) + ttl

@@ -6,7 +6,7 @@ from fastapi_walletauth.common import NotAuthorizedError, SupportedChains, setti
 from fastapi_walletauth.credentials import (
     GenericWalletCredentials,
     JWTWalletCredentials,
-    SimpleWalletCredentials,
+    ServerSideWalletCredentials,
 )
 
 
@@ -65,19 +65,19 @@ class CredentialsManager(Generic[GenericWalletCredentials]):
         raise NotImplementedError
 
 
-class ServerSideCredentialsManager(CredentialsManager[SimpleWalletCredentials]):
+class ServerSideCredentialsManager(CredentialsManager[ServerSideWalletCredentials]):
     """
     This class is used to manage authentication tokens and signature challenges on the server side.
     A self-updating dictionary keeping track of all authentication tokens and signature challenges.
     """
 
-    __auths: Dict[str, SimpleWalletCredentials] = {}
+    __auths: Dict[str, ServerSideWalletCredentials] = {}
     """Maps all authentication tokens to their respective `WalletAuth` objects."""
 
-    credentials_type = SimpleWalletCredentials
+    credentials_type = ServerSideWalletCredentials
 
     @classmethod
-    def get_auth_by_token(cls, token: str) -> SimpleWalletCredentials:
+    def get_auth_by_token(cls, token: str) -> ServerSideWalletCredentials:
         auth = cls.__auths.get(token)
         if not auth:
             raise NotAuthorizedError("Not authorized")
@@ -89,14 +89,14 @@ class ServerSideCredentialsManager(CredentialsManager[SimpleWalletCredentials]):
     @classmethod
     def solve_challenge(
         cls, address: str, chain: SupportedChains, signature: str
-    ) -> SimpleWalletCredentials:
+    ) -> ServerSideWalletCredentials:
         auth = super().solve_challenge(address, chain, signature)
         assert auth.token
         cls.__auths[auth.token] = auth
         return auth
 
     @classmethod
-    def unregister_auth(cls, auth: SimpleWalletCredentials) -> None:
+    def unregister_auth(cls, auth: ServerSideWalletCredentials) -> None:
         cls.remove_challenge(auth.address, auth.chain)
         if auth.token:
             cls.__auths.pop(auth.token)
@@ -117,7 +117,7 @@ class ServerSideCredentialsManager(CredentialsManager[SimpleWalletCredentials]):
     @classmethod
     def refresh_token(
         cls, token: str, ttl: int = settings.TOKEN_TTL
-    ) -> SimpleWalletCredentials:
+    ) -> ServerSideWalletCredentials:
         auth = cls.get_auth_by_token(token)
         cls.unregister_auth(auth)
         auth.refresh_token(ttl)
