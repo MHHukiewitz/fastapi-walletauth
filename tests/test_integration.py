@@ -66,6 +66,11 @@ async def test_router_integration(client):
     key = SigningKey.generate()
     address = base58.b58encode(bytes(key.verify_key)).decode("utf-8")
 
+    # test unauthorized
+    response = client.get("/authorized")
+    assert response.status_code == 403
+
+    # test challenge
     response = client.post(
         "/authorization/challenge",
         params={"address": address, "chain": chain},
@@ -81,6 +86,7 @@ async def test_router_integration(client):
         "utf-8"
     )
 
+    # test solve
     response = client.post(
         "/authorization/solve",
         params={
@@ -99,6 +105,7 @@ async def test_router_integration(client):
 
     token = data["token"]
 
+    # test authorized endpoint
     response = client.get(
         "/authorized",
         headers={"Authorization": f"Bearer {token}"},
