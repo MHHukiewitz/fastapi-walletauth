@@ -10,8 +10,8 @@ from cryptography.hazmat.primitives.asymmetric.ed25519 import (
 )
 from pydantic import BaseModel
 
-from fastapi_walletauth.common import NotAuthorizedError, SupportedChains, settings
-from fastapi_walletauth.verification import verify_signature_eth, verify_signature_sol
+from .common import NotAuthorizedError, SupportedChains, settings
+from .verification import verify_signature_eth, verify_signature_sol
 
 
 class WalletCredentialsInfo(BaseModel):

@@ -60,10 +60,10 @@ def create_authorization_router(credentials_manager: CredentialsManager) -> APIR
     async def refresh_token(token: str) -> TokenResponse:
         try:
             auth = credentials_manager.refresh_token(token)
-        except TimeoutError:
-            raise HTTPException(403, "Token expired")
-        except NotAuthorizedError:
-            raise HTTPException(403, "Not authorized")
+        except TimeoutError as e:
+            raise HTTPException(401, "Token expired") from e
+        except NotAuthorizedError as e:
+            raise HTTPException(401, "Not authorized") from e
         return TokenResponse(
             address=auth.address,
             chain=auth.chain,

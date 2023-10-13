@@ -2,8 +2,8 @@ import time
 from abc import abstractmethod
 from typing import Dict, Generic, Type
 
-from fastapi_walletauth.common import NotAuthorizedError, SupportedChains, settings
-from fastapi_walletauth.credentials import (
+from .common import NotAuthorizedError, SupportedChains, settings
+from .credentials import (
     GenericWalletCredentials,
     JWTWalletCredentials,
     ServerSideWalletCredentials,

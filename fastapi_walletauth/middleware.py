@@ -7,13 +7,13 @@ from fastapi.security.utils import get_authorization_scheme_param
 from starlette.requests import Request
 from starlette.status import HTTP_401_UNAUTHORIZED, HTTP_403_FORBIDDEN
 
-from fastapi_walletauth.common import NotAuthorizedError
-from fastapi_walletauth.credentials import (
+from .common import NotAuthorizedError
+from .credentials import (
     GenericWalletCredentials,
     JWTWalletCredentials,
     ServerSideWalletCredentials,
 )
-from fastapi_walletauth.manager import (
+from .manager import (
     CredentialsManager,
     JWTCredentialsManager,
     ServerSideCredentialsManager,
@@ -54,18 +54,16 @@ class BearerWalletAuth(HTTPBearer, Generic[GenericWalletCredentials]):
 
         try:
             return self.manager.get_auth_by_token(credentials)
-        except (TimeoutError, NotAuthorizedError) as e:
-            if e is TimeoutError:
-                raise HTTPException(
-                    status_code=HTTP_401_UNAUTHORIZED, detail="Token expired"
-                )
-            if e is NotAuthorizedError:
-                raise HTTPException(
-                    status_code=HTTP_401_UNAUTHORIZED,
-                    detail=f"Not authorized. Request a challenge to sign from f{self.challenge_endpoint} "
-                    f"and retrieve a token from f{self.token_endpoint}.",
-                )
-            raise e
+        except TimeoutError as e:
+            raise HTTPException(
+                status_code=HTTP_401_UNAUTHORIZED, detail="Token expired"
+            ) from e
+        except NotAuthorizedError as e:
+            raise HTTPException(
+                status_code=HTTP_401_UNAUTHORIZED,
+                detail=f"Not authorized. Request a challenge to sign from f{self.challenge_endpoint} "
+                f"and retrieve a token from f{self.token_endpoint}.",
+            ) from e
 
 
 jwt_credentials_manager = JWTCredentialsManager()

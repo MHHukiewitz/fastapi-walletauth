@@ -114,3 +114,10 @@ async def test_router_integration(client):
     data = response.json()
     assert data["address"] == address
     assert data["chain"] == chain
+
+    # test wrong token
+    response = client.get(
+        "/authorized",
+        headers={"Authorization": f"Bearer {token}1"},
+    )
+    assert response.status_code == 401
