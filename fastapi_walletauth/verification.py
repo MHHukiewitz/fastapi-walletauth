@@ -3,9 +3,9 @@ from typing import Union
 import base58
 from eth_account import Account
 from eth_account.messages import encode_defunct
-from nacl.signing import VerifyKey
-from nacl.exceptions import BadSignatureError as NaclBadSignatureError
 from eth_keys.exceptions import BadSignature as EthBadSignatureError
+from nacl.exceptions import BadSignatureError as NaclBadSignatureError
+from nacl.signing import VerifyKey
 
 
 class BadSignatureError(Exception):
@@ -64,10 +64,6 @@ def verify_signature_eth(
         if signature.startswith("0x"):
             signature = signature[2:]
         signature = bytes.fromhex(signature)
-    else:
-        if signature.startswith(b"0x"):
-            signature = signature[2:]
-        signature = bytes.fromhex(signature.decode("utf-8"))
     if isinstance(public_key, bytes):
         public_key = "0x" + public_key.hex()
     if isinstance(message, bytes):
