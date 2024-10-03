@@ -15,11 +15,11 @@ Adding the authentication endpoints is as simple as importing the `authorization
 
 ```python
 from fastapi import FastAPI
-from fastapi_walletauth import authorization_routes
+from fastapi_walletauth import jwt_authorization_router
 
 app = FastAPI()
 
-app.include_router(authorization_routes)
+app.include_router(jwt_authorization_router)
 ```
 
 This will add the following endpoints to your application:
@@ -33,13 +33,13 @@ You can then use `WalletAuthDep` to protect your endpoints:
 
 ```python
 from fastapi import FastAPI
-from fastapi_walletauth import WalletAuthDep, authorization_routes
+from fastapi_walletauth import JWTWalletAuthDep, jwt_authorization_router
 
 app = FastAPI()
-app.include_router(authorization_routes)
+app.include_router(jwt_authorization_router)
 
 @app.get("/protected")
-def protected(wa: WalletAuthDep):
+def protected(wa: JWTWalletAuthDep):
     return wa.address
 ```
 
