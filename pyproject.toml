@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "fastapi-walletauth"
-version = "2.1.1"
+version = "2.2.0"
 description = "FastAPI extension for user authentication through signature challenges"
 authors = ["mhh <mike.hukiewitz@robotter.ai>"]
 readme = "README.md"
@@ -18,6 +18,9 @@ classifiers = [
     "Topic :: Security",
     "Typing :: Typed",
 ]
+
+[tool.poetry.scripts]
+walletauth-generate-keys = "fastapi_walletauth.generate_keys:main"
 
 [tool.poetry.dependencies]
 python = ">=3.9,<4.0"
