@@ -5,7 +5,7 @@ from typing import Optional, TypeVar
 
 import jwt
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey, Ed25519PublicKey
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from fastapi_walletauth.common import NotAuthorizedError, SupportedChains, settings
 from fastapi_walletauth.verification import verify_signature_eth, verify_signature_sol
@@ -24,15 +24,17 @@ class WalletCredentials(WalletCredentialsInfo):
     the server.
     """
 
-    challenge: str
-    internal_token: Optional[str]
+    challenge: str = Field(default=None, init=False)
+    internal_token: Optional[str] = Field(default=None, init=False)
 
     def __init__(
         self, address: str, chain: SupportedChains, ttl: int = settings.CHALLENGE_TTL
     ):
         valid_til = int(time.time()) + ttl
         challenge = f'{{"chain":"{chain.value}","address":"{address}","app":"{settings.APP}","time":"{time.time()}"}}'
-        super().__init__(address=address, chain=chain, valid_til=valid_til, challenge=challenge, internal_token=None)
+        super().__init__(address=address, chain=chain, valid_til=valid_til)
+        self.challenge = challenge
+        self.internal_token = None
 
     @property
     def token(self) -> Optional[str]:
@@ -102,9 +104,9 @@ class JWTWalletCredentials(WalletCredentials):
         try:
             public_key = Ed25519PublicKey.from_public_bytes(bytes.fromhex(settings.PUBLIC_KEY))
             payload = jwt.decode(token, public_key, algorithms=["EdDSA"])
-            self = cls(address=payload["sub"], chain=payload["chain"])
+            self = cls(address=payload["sub"], chain=SupportedChains(payload["chain"]))
             self.valid_til = payload["exp"]
-            self._token = token
+            self.internal_token = token
 
             return self
         except jwt.exceptions.PyJWTError as e:
