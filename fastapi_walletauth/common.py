@@ -1,7 +1,7 @@
 from enum import Enum
 
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
-from pydantic import ConfigDict
+from pydantic import ConfigDict, Extra
 from pydantic_settings import BaseSettings
 
 
@@ -31,7 +31,8 @@ class Settings(BaseSettings):
     model_config = ConfigDict(
         env_prefix="FASTAPI_WALLETAUTH_",
         case_sensitive=False,
-        env_file=".env"
+        env_file=".env",
+        extra=Extra.allow
     )
 
 
