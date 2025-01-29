@@ -45,15 +45,14 @@ def protected(wa: JWTWalletAuthDep):
 
 ## Signing the challenge
 
-The challenge is a serialized JSON object containing the following fields:
+The challenge message is now formatted in a human-readable way and includes the following fields:
 
-```python
-message = {
-    "chain": "ETH",
-    "address": "0x...",
-    "app": "myapp",
-    "time": 1688819493.8691394
-}
+```
+Hello, please sign this message!
+Chain: ETH
+Address: 0x...
+App: myapp
+Time: 2025-01-29 15:22:39
 ```
 
 **PLEASE NOTE**: The `app` field needs to be set to the name of your application. This is used to prevent replay attacks.
@@ -61,8 +60,25 @@ message = {
 export FASTAPI_WALLETAUTH_APP=myapp
 ```
 
-The signature format depends on the wallet type and is specified in the `chain` field. This signature is then sent to the
-`/authentication/solve` endpoint to obtain a Bearer token.
+The signature format depends on the wallet type and is specified in the `chain` field. This signature is then sent to the `/authentication/solve` endpoint to obtain a Bearer token.
+
+
+## Custom Greeting Configuration
+
+Starting from version 2.1.0, `fastapi-walletauth` allows you to configure a custom greeting message that will be included in the challenge message. This greeting can be set in the server configuration and will be used for all challenge messages.
+
+### Setting the Greeting
+
+The greeting message can be configured in the `Settings` class within your application. By default, the greeting is set to "Hello, please sign this message!". You can change this by setting the `GREETING` environment variable or by modifying the `Settings` class directly.
+
+Example:
+
+```python
+from fastapi_walletauth.common import settings
+
+# Set a custom greeting
+settings.GREETING = "Welcome! Please sign this message to continue."
+```
 
 ## Liability
 
