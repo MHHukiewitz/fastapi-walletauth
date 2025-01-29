@@ -1,4 +1,5 @@
 from fastapi import APIRouter, HTTPException
+from typing import Optional
 
 from .common import NotAuthorizedError, SupportedChains
 from .credentials import WalletCredentialsInfo
@@ -27,9 +28,9 @@ def create_authorization_router(credentials_manager: CredentialsManager) -> APIR
 
     @routes.post("/challenge")
     async def create_challenge(
-        address: str, chain: SupportedChains
+        address: str, chain: SupportedChains, greeting: Optional[str] = None
     ) -> ChallengeResponse:
-        challenge = credentials_manager.get_challenge(address=address, chain=chain)
+        challenge = credentials_manager.get_challenge(address=address, chain=chain, greeting=greeting)
         return ChallengeResponse(
             address=challenge.address,
             chain=challenge.chain,

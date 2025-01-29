@@ -1,6 +1,6 @@
 import time
 from abc import abstractmethod
-from typing import Dict, Generic, Type
+from typing import Dict, Generic, Type, Optional
 
 from fastapi_walletauth.common import NotAuthorizedError, SupportedChains, settings
 from fastapi_walletauth.credentials import (
@@ -33,11 +33,11 @@ class CredentialsManager(Generic[GenericWalletCredentials]):
 
     @classmethod
     def get_challenge(
-        cls, address: str, chain: SupportedChains
+        cls, address: str, chain: SupportedChains, greeting: Optional[str] = None
     ) -> GenericWalletCredentials:
         auth = cls.__challenges.get(address + "-" + str(chain))
         if auth is None or int(time.time()) > auth.valid_til:
-            auth = cls.credentials_type(address=address, chain=chain)
+            auth = cls.credentials_type(address=address, chain=chain, greeting=greeting)
             cls.__challenges[address + "-" + str(chain)] = auth
         return auth
 

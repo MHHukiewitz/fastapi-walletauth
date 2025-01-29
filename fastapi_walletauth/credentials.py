@@ -26,15 +26,28 @@ class WalletCredentials(WalletCredentialsInfo):
 
     challenge: str = Field(default=None, init=False)
     internal_token: Optional[str] = Field(default=None, init=False)
+    greeting: Optional[str] = None  # New optional greeting field
 
     def __init__(
-        self, address: str, chain: SupportedChains, ttl: int = settings.CHALLENGE_TTL
+        self, address: str, chain: SupportedChains, ttl: int = settings.CHALLENGE_TTL, greeting: Optional[str] = None
     ):
         valid_til = int(time.time()) + ttl
-        challenge = f'{{"chain":"{chain.value}","address":"{address}","app":"{settings.APP}","time":"{time.time()}"}}'
+        # Use the server-configured greeting
+        greeting = settings.GREETING
+
+        # Improved message formatting
+        message_parts = [
+            greeting,
+            f"Chain: {chain.value}",
+            f"Address: {address}",
+            f"App: {settings.APP}",
+            f"Time: {time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime())}"
+        ]
+        challenge = "\n".join(part for part in message_parts if part)
         super().__init__(address=address, chain=chain, valid_til=valid_til)
         self.challenge = challenge
         self.internal_token = None
+        object.__setattr__(self, 'greeting', greeting)  # Use object.__setattr__ to set greeting
 
     @property
     def token(self) -> Optional[str]:
