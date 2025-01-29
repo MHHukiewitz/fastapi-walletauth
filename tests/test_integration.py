@@ -34,6 +34,8 @@ async def test_router_integration(client):
     assert "challenge" in data
     assert "valid_til" in data
 
+    print("Challenge message to be signed:", data["challenge"])  # Print the challenge message
+
     signature = base58.b58encode(key.sign(data["challenge"].encode()).signature).decode(
         "utf-8"
     )

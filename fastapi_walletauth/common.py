@@ -26,6 +26,7 @@ class Settings(BaseSettings):
     AUTH_TYPE: str = AuthType.JWT.value
     TOKEN_TTL: int = 24 * 60 * 60  # 24 hours
     CHALLENGE_TTL: int = 10 * 60  # 10 minutes
+    GREETING: str = "Hello, please sign this message!"  # Default greeting
 
     model_config = ConfigDict(
         env_prefix="FASTAPI_WALLETAUTH_",
