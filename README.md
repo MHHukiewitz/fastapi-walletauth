@@ -62,9 +62,9 @@ export FASTAPI_WALLETAUTH_APP=myapp
 
 The signature format depends on the wallet type and is specified in the `chain` field. This signature is then sent to the `/authentication/solve` endpoint to obtain a Bearer token.
 
-## Transaction-Based Authentication (New in v2.2.0)
+## Transaction-Based Authentication (New in v3.0.0)
 
-Starting from version 2.2.0, `fastapi-walletauth` supports transaction-based authentication as an alternative to message signing. This is especially useful for hardware wallets (like Ledger) that may not support message signing in browser wallets.
+Starting from version 3.0.0, `fastapi-walletauth` supports transaction-based authentication as an alternative to message signing. This is especially useful for hardware wallets (like Ledger) that may not support message signing in browser wallets.
 
 ### Using Transaction-Based Authentication
 

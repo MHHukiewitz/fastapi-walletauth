@@ -189,6 +189,10 @@ def create_transaction_authorization_router(use_jwt: bool = True) -> APIRouter:
     if not use_jwt:
         @router.post("/logout")
         async def logout(token: str):
+            assert (
+                isinstance(manager, ServerSideCredentialsManager)
+                or isinstance(manager, ServerSideTransactionCredentialsManager)
+            )
             manager.unregister_token(token)
             return {"message": "Logged out"}
     
