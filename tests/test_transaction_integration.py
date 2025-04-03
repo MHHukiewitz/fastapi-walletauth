@@ -6,6 +6,7 @@ from starlette.testclient import TestClient
 import time
 from eth_account import Account
 import secrets
+from solders.transaction import Transaction
 
 from fastapi_walletauth.common import SupportedChains, NotAuthorizedError
 from fastapi_walletauth.router import (
@@ -40,12 +41,14 @@ async def test_transaction_router_integration(client):
 
     print("Transaction to be signed:", data["transaction"])  # Print the transaction
 
-    # Decode the transaction
+    # Decode the transaction and get the message bytes
     transaction = data["transaction"]
     transaction_bytes = base64.b64decode(transaction)
+    tx = Transaction.from_bytes(transaction_bytes)
+    message_bytes = bytes(tx.message)
     
-    # For the simplified test case, directly sign the bytes of the transaction with nacl
-    signature = base58.b58encode(key.sign(transaction_bytes).signature).decode("utf-8")
+    # Sign the message bytes
+    signature = base58.b58encode(key.sign(message_bytes).signature).decode("utf-8")
 
     response = client.post(
         "/transaction-auth/solve",
@@ -145,9 +148,11 @@ async def test_transaction_token_refresh(client):
     )
     transaction = response.json()["transaction"]
     transaction_bytes = base64.b64decode(transaction)
-    
-    # For the simplified test case, directly sign the bytes of the transaction with nacl
-    signature = base58.b58encode(key.sign(transaction_bytes).signature).decode("utf-8")
+    tx = Transaction.from_bytes(transaction_bytes)
+    message_bytes = bytes(tx.message)
+
+    # For the simplified test case, directly sign the message bytes with nacl
+    signature = base58.b58encode(key.sign(message_bytes).signature).decode("utf-8")
 
     # Solve the challenge to get a token
     response = client.post(
@@ -208,9 +213,11 @@ async def test_jwt_transaction_token_refresh():
     )
     transaction = response.json()["transaction"]
     transaction_bytes = base64.b64decode(transaction)
-    
-    # For the simplified test case, directly sign the bytes of the transaction with nacl
-    signature = base58.b58encode(key.sign(transaction_bytes).signature).decode("utf-8")
+    tx = Transaction.from_bytes(transaction_bytes)
+    message_bytes = bytes(tx.message)
+
+    # For the simplified test case, directly sign the message bytes with nacl
+    signature = base58.b58encode(key.sign(message_bytes).signature).decode("utf-8")
 
     # Solve the challenge to get a token
     response = client.post(
@@ -261,9 +268,11 @@ async def test_logout():
     )
     transaction = response.json()["transaction"]
     transaction_bytes = base64.b64decode(transaction)
-    
-    # For the simplified test case, directly sign the bytes of the transaction with nacl
-    signature = base58.b58encode(key.sign(transaction_bytes).signature).decode("utf-8")
+    tx = Transaction.from_bytes(transaction_bytes)
+    message_bytes = bytes(tx.message)
+
+    # For the simplified test case, directly sign the message bytes with nacl
+    signature = base58.b58encode(key.sign(message_bytes).signature).decode("utf-8")
 
     # Solve the challenge to get a token
     response = client.post(

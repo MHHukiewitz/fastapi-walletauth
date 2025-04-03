@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "fastapi-walletauth"
-version = "3.2.1"
+version = "3.2.2"
 description = "FastAPI extension for user authentication through signature challenges"
 authors = ["mhh <mike.hukiewitz@robotter.ai>"]
 readme = "README.md"

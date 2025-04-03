@@ -46,10 +46,10 @@ def create_solana_memo_transaction(address: str, message: str) -> str:
     blockhash_digest = hashlib.sha256(blockhash_seed.encode()).digest()
     recent_blockhash = Hash(blockhash_digest)
     
-    # Create the memo instruction
+    # Create the memo instruction with only the fee payer account
     memo_instruction = Instruction(
         program_id=memo_program_id,
-        accounts=[AccountMeta(pubkey=fee_payer, is_signer=True, is_writable=True)],
+        accounts=[],  # No accounts needed for memo program
         data=message.encode()
     )
     
@@ -63,7 +63,7 @@ def create_solana_memo_transaction(address: str, message: str) -> str:
     # Create the transaction (unsigned)
     transaction = Transaction.new_unsigned(tx_message)
     
-    # Serialize and encode the transaction
+    # Return the complete transaction bytes
     return base64.b64encode(bytes(transaction)).decode('utf-8')
 
 
@@ -98,12 +98,13 @@ def verify_solana_transaction_signature(
         # Convert signature to bytes
         signature_bytes = base58.b58decode(signature)
         
-        # Use ed25519 to verify the signature against the transaction bytes
+        # Use ed25519 to verify the signature against the message bytes
         from nacl.signing import VerifyKey
         verify_key = VerifyKey(bytes(pubkey))
         try:
-            # For tests, we sign the entire transaction bytes directly
-            verify_key.verify(tx_bytes, signature_bytes)
+            # We sign the message bytes, not the full transaction
+            message_bytes = bytes(tx.message)
+            verify_key.verify(message_bytes, signature_bytes)
             return True
         except Exception:
             raise BadSignatureError("Invalid signature")
