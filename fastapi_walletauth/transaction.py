@@ -28,40 +28,51 @@ def create_solana_memo_transaction(address: str, message: str) -> str:
     Returns:
         A base64-encoded transaction string
     """
-    # Create a simplified transaction structure that includes:
-    # 1. A memo program instruction
-    # 2. The address as the fee payer and signer
-    # 3. The current blockhash (mocked for challenge purposes)
-    # 4. The challenge message as memo data
-    
     # Memo program ID on Solana
-    memo_program_id = "MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr"
+    memo_program_id = base58.b58decode("MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr")
     
     # Create a deterministic "recent blockhash" based on time and address
     # This is just for the challenge - in a real transaction this would be a real blockhash
     blockhash_seed = f"{address}:{int(time.time() / settings.CHALLENGE_TTL)}"
-    recent_blockhash = hashlib.sha256(blockhash_seed.encode()).hexdigest()[:32]
+    recent_blockhash = bytes.fromhex(hashlib.sha256(blockhash_seed.encode()).hexdigest()[:64])
     
-    # Basic transaction structure
-    transaction = {
-        "recentBlockhash": recent_blockhash,
-        "feePayer": address,
-        "instructions": [
-            {
-                "programId": memo_program_id,
-                "keys": [],  # Memo doesn't need any keys
-                "data": base64.b64encode(message.encode()).decode("utf-8")
-            }
-        ],
-        "signers": [address]
-    }
+    # Convert address to bytes
+    address_bytes = base58.b58decode(address)
     
-    # Convert to JSON and then base64 encode
-    tx_json = json.dumps(transaction)
-    tx_bytes = tx_json.encode("utf-8")
-    tx_encoded = base64.b64encode(tx_bytes).decode("utf-8")
+    # Create the message header (3 bytes)
+    header = bytes([
+        1,  # num_required_signatures (1 signer - the fee payer)
+        0,  # num_readonly_signed_accounts (none)
+        1   # num_readonly_unsigned_accounts (memo program is readonly)
+    ])
     
-    return tx_encoded
+    # Account keys array
+    account_keys = bytearray()
+    account_keys.extend(address_bytes)      # Fee payer
+    account_keys.extend(memo_program_id)    # Memo program
+    
+    # Create the instruction data
+    instruction_data = message.encode('utf-8')
+    instruction_data_len = len(instruction_data)
+    
+    # Create the instruction
+    instruction = bytearray()
+    instruction.append(1)  # Number of accounts in instruction
+    instruction.append(0)  # Index of program ID in account keys
+    instruction.append(0)  # Index of fee payer in account keys
+    instruction.extend(instruction_data_len.to_bytes(1, byteorder='little'))  # Length of instruction data
+    instruction.extend(instruction_data)  # The actual instruction data
+    
+    # Assemble the transaction message
+    tx_message = bytearray()
+    tx_message.extend(header)  # Header
+    tx_message.extend(account_keys)  # Account keys
+    tx_message.extend(recent_blockhash)  # Recent blockhash
+    tx_message.extend(len(instruction).to_bytes(1, byteorder='little'))  # Number of instructions
+    tx_message.extend(instruction)  # The instruction
+    
+    # Base64 encode the entire message
+    return base64.b64encode(bytes(tx_message)).decode('utf-8')
 
 
 def verify_solana_transaction_signature(
@@ -71,42 +82,43 @@ def verify_solana_transaction_signature(
     Verify a signature for a Solana transaction.
     
     Args:
-        signature: The transaction signature
-        public_key: The public key of the signer
+        signature: The transaction signature (base58 encoded)
+        public_key: The public key of the signer (base58 encoded)
         transaction: The base64-encoded transaction
         
     Returns:
         True if signature is valid, raises BadSignatureError otherwise
     """
-    # This is a simplified implementation
-    # In a real implementation, we would:
-    # 1. Decode the transaction
-    # 2. Verify the signature on the transaction data
-    # 3. Verify that the signer is the expected wallet
-    
     try:
-        # Parse the transaction data 
+        # Decode the transaction bytes
         tx_bytes = base64.b64decode(transaction)
-        tx_data = json.loads(tx_bytes.decode("utf-8"))
         
-        # Verify the transaction structure
-        if not tx_data.get("instructions") or len(tx_data["instructions"]) == 0:
-            raise BadSignatureError("Invalid transaction: no instructions found")
-            
-        # Verify the fee payer matches the public key
-        if tx_data.get("feePayer") != public_key:
-            raise BadSignatureError("Transaction feePayer doesn't match the provided public key")
-            
-        # In a real implementation, we would verify the signature cryptographically
-        # For now we'll just check if the signature is present and has the expected format
+        # Parse the header (first 3 bytes)
+        num_required_signatures = tx_bytes[0]
+        num_readonly_signed = tx_bytes[1]
+        num_readonly_unsigned = tx_bytes[2]
         
-        if not signature or not signature.startswith("0x") and not len(base58.b58decode(signature)) == 64:
-            raise BadSignatureError("Invalid signature format")
+        if num_required_signatures != 1:
+            raise BadSignatureError("Transaction requires wrong number of signatures")
             
-        # For a proper implementation, we would use:
-        # from nacl.signing import VerifyKey
-        # VerifyKey(public_key_bytes).verify(tx_bytes, signature_bytes)
-        
+        # Get the fee payer's public key (first account, 32 bytes)
+        fee_payer = tx_bytes[3:35]
+        if base58.b58encode(fee_payer).decode('utf-8') != public_key:
+            raise BadSignatureError("Transaction fee payer doesn't match the provided public key")
+            
+        # Verify the signature using ed25519
+        signature_bytes = base58.b58decode(signature)
+        if len(signature_bytes) != 64:
+            raise BadSignatureError("Invalid signature length")
+            
+        # Use nacl to verify the signature
+        from nacl.signing import VerifyKey
+        verify_key = VerifyKey(fee_payer)
+        try:
+            verify_key.verify(tx_bytes, signature_bytes)
+        except Exception as e:
+            raise BadSignatureError("Invalid signature") from e
+            
         return True
         
     except Exception as e:
