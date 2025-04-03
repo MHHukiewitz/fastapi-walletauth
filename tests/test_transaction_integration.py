@@ -40,9 +40,11 @@ async def test_transaction_router_integration(client):
 
     print("Transaction to be signed:", data["transaction"])  # Print the transaction
 
-    # Decode the transaction, sign it, and get the signature
+    # Decode the transaction
     transaction = data["transaction"]
     transaction_bytes = base64.b64decode(transaction)
+    
+    # For the simplified test case, directly sign the bytes of the transaction with nacl
     signature = base58.b58encode(key.sign(transaction_bytes).signature).decode("utf-8")
 
     response = client.post(
@@ -143,6 +145,8 @@ async def test_transaction_token_refresh(client):
     )
     transaction = response.json()["transaction"]
     transaction_bytes = base64.b64decode(transaction)
+    
+    # For the simplified test case, directly sign the bytes of the transaction with nacl
     signature = base58.b58encode(key.sign(transaction_bytes).signature).decode("utf-8")
 
     # Solve the challenge to get a token
@@ -204,6 +208,8 @@ async def test_jwt_transaction_token_refresh():
     )
     transaction = response.json()["transaction"]
     transaction_bytes = base64.b64decode(transaction)
+    
+    # For the simplified test case, directly sign the bytes of the transaction with nacl
     signature = base58.b58encode(key.sign(transaction_bytes).signature).decode("utf-8")
 
     # Solve the challenge to get a token
@@ -255,6 +261,8 @@ async def test_logout():
     )
     transaction = response.json()["transaction"]
     transaction_bytes = base64.b64decode(transaction)
+    
+    # For the simplified test case, directly sign the bytes of the transaction with nacl
     signature = base58.b58encode(key.sign(transaction_bytes).signature).decode("utf-8")
 
     # Solve the challenge to get a token

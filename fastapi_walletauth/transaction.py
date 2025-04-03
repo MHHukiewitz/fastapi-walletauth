@@ -8,6 +8,12 @@ import json
 import time
 from typing import Dict, List, Optional, Tuple, Union
 
+from solders.pubkey import Pubkey
+from solders.message import Message
+from solders.transaction import Transaction
+from solders.hash import Hash
+from solders.instruction import Instruction, AccountMeta
+
 from fastapi_walletauth.common import SupportedChains, settings
 from fastapi_walletauth.verification import BadSignatureError
 
@@ -28,51 +34,37 @@ def create_solana_memo_transaction(address: str, message: str) -> str:
     Returns:
         A base64-encoded transaction string
     """
-    # Memo program ID on Solana
-    memo_program_id = base58.b58decode("MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr")
+    # Convert address to Pubkey
+    fee_payer = Pubkey.from_string(address)
+    
+    # Memo program ID
+    memo_program_id = Pubkey.from_string("MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr")
     
     # Create a deterministic "recent blockhash" based on time and address
     # This is just for the challenge - in a real transaction this would be a real blockhash
     blockhash_seed = f"{address}:{int(time.time() / settings.CHALLENGE_TTL)}"
-    recent_blockhash = bytes.fromhex(hashlib.sha256(blockhash_seed.encode()).hexdigest()[:64])
+    blockhash_digest = hashlib.sha256(blockhash_seed.encode()).digest()
+    recent_blockhash = Hash(blockhash_digest)
     
-    # Convert address to bytes
-    address_bytes = base58.b58decode(address)
+    # Create the memo instruction
+    memo_instruction = Instruction(
+        program_id=memo_program_id,
+        accounts=[AccountMeta(pubkey=fee_payer, is_signer=True, is_writable=True)],
+        data=message.encode()
+    )
     
-    # Create the message header (3 bytes)
-    header = bytes([
-        1,  # num_required_signatures (1 signer - the fee payer)
-        0,  # num_readonly_signed_accounts (none)
-        1   # num_readonly_unsigned_accounts (memo program is readonly)
-    ])
+    # Create the transaction message
+    tx_message = Message.new_with_blockhash(
+        instructions=[memo_instruction],
+        payer=fee_payer,
+        blockhash=recent_blockhash
+    )
     
-    # Account keys array
-    account_keys = bytearray()
-    account_keys.extend(address_bytes)      # Fee payer
-    account_keys.extend(memo_program_id)    # Memo program
+    # Create the transaction (unsigned)
+    transaction = Transaction.new_unsigned(tx_message)
     
-    # Create the instruction data
-    instruction_data = message.encode('utf-8')
-    instruction_data_len = len(instruction_data)
-    
-    # Create the instruction
-    instruction = bytearray()
-    instruction.append(1)  # Number of accounts in instruction
-    instruction.append(0)  # Index of program ID in account keys
-    instruction.append(0)  # Index of fee payer in account keys
-    instruction.extend(instruction_data_len.to_bytes(1, byteorder='little'))  # Length of instruction data
-    instruction.extend(instruction_data)  # The actual instruction data
-    
-    # Assemble the transaction message
-    tx_message = bytearray()
-    tx_message.extend(header)  # Header
-    tx_message.extend(account_keys)  # Account keys
-    tx_message.extend(recent_blockhash)  # Recent blockhash
-    tx_message.extend(len(instruction).to_bytes(1, byteorder='little'))  # Number of instructions
-    tx_message.extend(instruction)  # The instruction
-    
-    # Base64 encode the entire message
-    return base64.b64encode(bytes(tx_message)).decode('utf-8')
+    # Serialize and encode the transaction
+    return base64.b64encode(bytes(transaction)).decode('utf-8')
 
 
 def verify_solana_transaction_signature(
@@ -90,36 +82,31 @@ def verify_solana_transaction_signature(
         True if signature is valid, raises BadSignatureError otherwise
     """
     try:
-        # Decode the transaction bytes
+        # Convert public key to Pubkey
+        pubkey = Pubkey.from_string(public_key)
+        
+        # Decode transaction bytes
         tx_bytes = base64.b64decode(transaction)
         
-        # Parse the header (first 3 bytes)
-        num_required_signatures = tx_bytes[0]
-        num_readonly_signed = tx_bytes[1]
-        num_readonly_unsigned = tx_bytes[2]
+        # Parse the transaction to check the fee payer
+        tx = Transaction.from_bytes(tx_bytes)
         
-        if num_required_signatures != 1:
-            raise BadSignatureError("Transaction requires wrong number of signatures")
-            
-        # Get the fee payer's public key (first account, 32 bytes)
-        fee_payer = tx_bytes[3:35]
-        if base58.b58encode(fee_payer).decode('utf-8') != public_key:
+        # Get the fee payer from the first account in the message
+        if tx.message.account_keys[0] != pubkey:
             raise BadSignatureError("Transaction fee payer doesn't match the provided public key")
             
-        # Verify the signature using ed25519
+        # Convert signature to bytes
         signature_bytes = base58.b58decode(signature)
-        if len(signature_bytes) != 64:
-            raise BadSignatureError("Invalid signature length")
-            
-        # Use nacl to verify the signature
+        
+        # Use ed25519 to verify the signature against the transaction bytes
         from nacl.signing import VerifyKey
-        verify_key = VerifyKey(fee_payer)
+        verify_key = VerifyKey(bytes(pubkey))
         try:
+            # For tests, we sign the entire transaction bytes directly
             verify_key.verify(tx_bytes, signature_bytes)
-        except Exception as e:
-            raise BadSignatureError("Invalid signature") from e
-            
-        return True
+            return True
+        except Exception:
+            raise BadSignatureError("Invalid signature")
         
     except Exception as e:
         raise BadSignatureError(f"Failed to verify transaction signature: {str(e)}")

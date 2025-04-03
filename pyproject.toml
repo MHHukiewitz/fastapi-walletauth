@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "fastapi-walletauth"
-version = "3.2.0"
+version = "3.2.1"
 description = "FastAPI extension for user authentication through signature challenges"
 authors = ["mhh <mike.hukiewitz@robotter.ai>"]
 readme = "README.md"
@@ -33,6 +33,7 @@ pyjwt = "^2.8.0"
 cryptography = "^41.0.3"
 pydantic = "^2.0.0"
 pydantic-settings = "^2.7.1"
+solders = "^0.26.0"
 
 
 [tool.poetry.group.dev.dependencies]
