@@ -99,7 +99,7 @@ def create_transaction_authorization_router(use_jwt: bool = True) -> APIRouter:
     Returns:
         A FastAPI router with transaction challenge endpoints
     """
-    manager = JWTTransactionCredentialsManager if use_jwt else ServerSideTransactionCredentialsManager
+    manager_class = JWTTransactionCredentialsManager if use_jwt else ServerSideTransactionCredentialsManager
     
     router = APIRouter(
         prefix="/transaction-auth",
@@ -122,7 +122,7 @@ def create_transaction_authorization_router(use_jwt: bool = True) -> APIRouter:
         Returns:
             A transaction challenge response
         """
-        auth = manager.get_transaction_challenge(address=address, chain=chain, greeting=greeting)
+        auth = manager_class.get_transaction_challenge(address=address, chain=chain, greeting=greeting)
         return TransactionChallengeResponse(
             address=auth.address,
             chain=auth.chain,
@@ -147,7 +147,7 @@ def create_transaction_authorization_router(use_jwt: bool = True) -> APIRouter:
             A token response
         """
         try:
-            auth = manager.solve_transaction_challenge(
+            auth = manager_class.solve_transaction_challenge(
                 address=address, chain=chain, signature=signature, transaction=transaction
             )
             return TokenResponse(
@@ -173,7 +173,7 @@ def create_transaction_authorization_router(use_jwt: bool = True) -> APIRouter:
             A token response
         """
         try:
-            auth = manager.refresh_token(token)
+            auth = manager_class.refresh_token(token)
         except TimeoutError:
             raise HTTPException(403, "Token expired")
         except NotAuthorizedError:
@@ -189,11 +189,8 @@ def create_transaction_authorization_router(use_jwt: bool = True) -> APIRouter:
     if not use_jwt:
         @router.post("/logout")
         async def logout(token: str):
-            assert (
-                isinstance(manager, ServerSideCredentialsManager)
-                or isinstance(manager, ServerSideTransactionCredentialsManager)
-            )
-            manager.unregister_token(token)
+            assert issubclass(manager_class, (ServerSideCredentialsManager, ServerSideTransactionCredentialsManager))
+            manager_class.unregister_token(token)
             return {"message": "Logged out"}
     
     return router

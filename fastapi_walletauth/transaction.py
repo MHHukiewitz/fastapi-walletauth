@@ -2,6 +2,7 @@
 Transaction handling for different blockchain networks.
 """
 import base58
+import base64
 import hashlib
 import json
 import time
@@ -25,7 +26,7 @@ def create_solana_memo_transaction(address: str, message: str) -> str:
         message: The challenge message to include in the memo
         
     Returns:
-        A base58-encoded transaction string
+        A base64-encoded transaction string
     """
     # Create a simplified transaction structure that includes:
     # 1. A memo program instruction
@@ -49,16 +50,16 @@ def create_solana_memo_transaction(address: str, message: str) -> str:
             {
                 "programId": memo_program_id,
                 "keys": [],  # Memo doesn't need any keys
-                "data": base58.b58encode(message.encode()).decode("utf-8")
+                "data": base64.b64encode(message.encode()).decode("utf-8")
             }
         ],
         "signers": [address]
     }
     
-    # Convert to JSON and then base58 encode
+    # Convert to JSON and then base64 encode
     tx_json = json.dumps(transaction)
     tx_bytes = tx_json.encode("utf-8")
-    tx_encoded = base58.b58encode(tx_bytes).decode("utf-8")
+    tx_encoded = base64.b64encode(tx_bytes).decode("utf-8")
     
     return tx_encoded
 
@@ -72,7 +73,7 @@ def verify_solana_transaction_signature(
     Args:
         signature: The transaction signature
         public_key: The public key of the signer
-        transaction: The base58-encoded transaction
+        transaction: The base64-encoded transaction
         
     Returns:
         True if signature is valid, raises BadSignatureError otherwise
@@ -85,7 +86,7 @@ def verify_solana_transaction_signature(
     
     try:
         # Parse the transaction data 
-        tx_bytes = base58.b58decode(transaction)
+        tx_bytes = base64.b64decode(transaction)
         tx_data = json.loads(tx_bytes.decode("utf-8"))
         
         # Verify the transaction structure

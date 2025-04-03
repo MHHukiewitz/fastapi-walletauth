@@ -1,4 +1,5 @@
 import base58
+import base64
 import pytest
 from nacl.signing import SigningKey
 from starlette.testclient import TestClient
@@ -41,7 +42,7 @@ async def test_transaction_router_integration(client):
 
     # Decode the transaction, sign it, and get the signature
     transaction = data["transaction"]
-    transaction_bytes = base58.b58decode(transaction)
+    transaction_bytes = base64.b64decode(transaction)
     signature = base58.b58encode(key.sign(transaction_bytes).signature).decode("utf-8")
 
     response = client.post(
@@ -141,7 +142,7 @@ async def test_transaction_token_refresh(client):
         params={"address": address, "chain": chain},
     )
     transaction = response.json()["transaction"]
-    transaction_bytes = base58.b58decode(transaction)
+    transaction_bytes = base64.b64decode(transaction)
     signature = base58.b58encode(key.sign(transaction_bytes).signature).decode("utf-8")
 
     # Solve the challenge to get a token
@@ -202,7 +203,7 @@ async def test_jwt_transaction_token_refresh():
         params={"address": address, "chain": chain},
     )
     transaction = response.json()["transaction"]
-    transaction_bytes = base58.b58decode(transaction)
+    transaction_bytes = base64.b64decode(transaction)
     signature = base58.b58encode(key.sign(transaction_bytes).signature).decode("utf-8")
 
     # Solve the challenge to get a token
@@ -253,7 +254,7 @@ async def test_logout():
         params={"address": address, "chain": chain},
     )
     transaction = response.json()["transaction"]
-    transaction_bytes = base58.b58decode(transaction)
+    transaction_bytes = base64.b64decode(transaction)
     signature = base58.b58encode(key.sign(transaction_bytes).signature).decode("utf-8")
 
     # Solve the challenge to get a token
