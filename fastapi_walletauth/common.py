@@ -1,16 +1,16 @@
-from enum import Enum
+from enum import Enum, StrEnum
 
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
-from pydantic import ConfigDict, Extra
-from pydantic_settings import BaseSettings
+from pydantic import ConfigDict
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
-class SupportedChains(Enum):
+class SupportedChains(StrEnum):
     Solana = "SOL"
     Ethereum = "ETH"
 
 
-class AuthType(Enum):
+class AuthType(StrEnum):
     Bearer = "Bearer"
     JWT = "JWT"
 
@@ -28,11 +28,11 @@ class Settings(BaseSettings):
     CHALLENGE_TTL: int = 10 * 60  # 10 minutes
     GREETING: str = "Hello, please sign this message!"  # Default greeting
 
-    model_config = ConfigDict(
+    model_config = SettingsConfigDict(
         env_prefix="FASTAPI_WALLETAUTH_",
         case_sensitive=False,
         env_file=".env",
-        extra=Extra.allow
+        extra="allow"
     )
 
 

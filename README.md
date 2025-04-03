@@ -62,6 +62,46 @@ export FASTAPI_WALLETAUTH_APP=myapp
 
 The signature format depends on the wallet type and is specified in the `chain` field. This signature is then sent to the `/authentication/solve` endpoint to obtain a Bearer token.
 
+## Transaction-Based Authentication (New in v2.2.0)
+
+Starting from version 2.2.0, `fastapi-walletauth` supports transaction-based authentication as an alternative to message signing. This is especially useful for hardware wallets (like Ledger) that may not support message signing in browser wallets.
+
+### Using Transaction-Based Authentication
+
+To enable transaction-based authentication, import the transaction authorization router:
+
+```python
+from fastapi import FastAPI
+from fastapi_walletauth import jwt_transaction_authorization_router
+
+app = FastAPI()
+
+app.include_router(jwt_transaction_authorization_router)
+```
+
+This adds the following endpoints to your application:
+
+- `POST /transaction-auth/challenge`: Returns a transaction to sign instead of a message
+- `POST /transaction-auth/solve`: Returns a Bearer token if the transaction signature is valid
+- `POST /transaction-auth/refresh`: Returns a new token if the current token is valid
+
+### Transaction Challenge Format
+
+The transaction challenges are simple memo transactions:
+
+- For Solana: A basic transaction with a memo instruction containing the challenge message
+- For Ethereum: A zero-value transaction to the zero address with the challenge message in the data field
+
+### Signing Transactions
+
+The flow for transaction-based authentication is:
+
+1. Request a challenge transaction at `/transaction-auth/challenge`
+2. Sign the transaction with your wallet (without sending it to the blockchain)
+3. Submit the transaction signature and the transaction to `/transaction-auth/solve`
+4. Use the returned token for subsequent authenticated requests
+
+This approach is compatible with hardware wallets that support transaction signing but not message signing.
 
 ## Custom Greeting Configuration
 
